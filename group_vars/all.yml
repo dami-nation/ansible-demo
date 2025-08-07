@@ -1,6 +1,6 @@
 db_user: dami
 db_pass: 06thechamP@!
 db_name: realcloud
-http_host: 54.196.241.162
+http_host: 54.205.154.136
 http_port: 80
 http_conf: default.conf

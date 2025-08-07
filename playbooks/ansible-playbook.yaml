@@ -2,7 +2,7 @@
   hosts: Nginx-Servers
   become: true
   vars:
-    nginx_custom_config: files/nginx.conf
+    nginx_custom_config: files/apache-template.conf
   tasks:
     - name: Install Nginx Web Server
       apt:
@@ -27,8 +27,8 @@
 
     - name: Deploy custom index.html to Nginx web root
       copy:
-        src: files/index.html
-        dest: /var/www/html/index.html
+        src: files/index-template.html
+        dest: /var/www/html/index-template.html
         owner: www-data
         group: www-data
         mode: '0644'
