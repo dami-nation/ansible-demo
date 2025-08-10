@@ -1,31 +1,44 @@
 - name: PlayBook 1 - Nginx Installation
-  hosts: Nginx-Servers
+  hosts: nginx_servers
   become: true
   vars:
-    nginx_custom_config: files/nginx.conf
+    nginx_custom_config_src: files/nginx.conf
+    nginx_main_conf: /etc/nginx/nginx.conf
+    nginx_site_name: my_site.conf
+    nginx_site_src: files/my_site.conf
+    nginx_site_dest: "/etc/nginx/sites-available/{{ nginx_site_name }}"
   tasks:
     - name: Install Nginx Web Server
       apt:
         name: nginx
-        state: latest
+        state: present
         update_cache: yes
 
-    - name: Start and Enable Nginx Service
+    - name: Start and enable Nginx
       service:
         name: nginx
         state: started
         enabled: yes
 
-    - name: Copy custom Nginx config
+    - name: Upload main nginx.conf to temp
       copy:
-        src: "{{ nginx_custom_config }}"
-        dest: /etc/nginx/nginx.conf
+        src: "{{ nginx_custom_config_src }}"
+        dest: "/etc/nginx/nginx.conf.new"
         owner: root
         group: root
-        mode: 0644
+        mode: '0644'
+
+    - name: Validate temp nginx.conf
+      command: nginx -t -c /etc/nginx/nginx.conf.new
+      register: main_test
+      changed_when: false
+
+    - name: Activate main nginx.conf if valid
+      command: mv /etc/nginx/nginx.conf.new {{ nginx_main_conf }}
+      when: main_test.rc == 0
       notify: Reload Nginx
 
-    - name: Deploy custom index.html to Nginx web root
+    - name: Deploy index.html
       copy:
         src: files/index-template.html
         dest: /var/www/html/index.html
@@ -33,30 +46,28 @@
         group: www-data
         mode: '0644'
 
-    - name: Remove default Nginx site
+    - name: Remove default site
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
       notify: Reload Nginx
 
-    - name: Deploy custom site config
-      copy:
-        src: files/my_site.conf
-        dest: /etc/nginx/sites-available/my_site.conf
+    - name: Deploy custom site with validation
+      template:
+        src: "{{ nginx_site_src }}"
+        dest: "{{ nginx_site_dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+        validate: "nginx -t -c %s"
       notify: Reload Nginx
 
     - name: Enable custom site
       file:
-        src: /etc/nginx/sites-available/my_site.conf
-        dest: /etc/nginx/sites-enabled/my_site.conf
+        src: "{{ nginx_site_dest }}"
+        dest: "/etc/nginx/sites-enabled/{{ nginx_site_name }}"
         state: link
-        force: true
       notify: Reload Nginx
-
-    - name: Validate nginx config before reloading
-      command: nginx -t
-      register: nginx_test
-      failed_when: nginx_test.rc != 0
 
   handlers:
     - name: Reload Nginx

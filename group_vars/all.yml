@@ -1,6 +1,6 @@
-db_user: dami
-db_pass: 06thechamP@!
-db_name: realcloud
-http_host: 54.205.154.136
+db_user: "dami"
+db_pass: "06thechamP@!"
+db_name: "realcloud"
+http_host: "54.160.195.111"
 http_port: 80
-http_conf: default.conf
+http_conf: "default.conf"
